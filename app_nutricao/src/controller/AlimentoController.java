@@ -9,6 +9,9 @@ import model.AlimentoModel;
 
 public class AlimentoController {
     public static void listarAlimentos(Connection con) throws SQLException{
+        System.out.println("\n====================================");
+        System.out.println("  LISTANDO ALIMENTOS ");
+        System.out.println("====================================\n");
         System.out.println("Lista de Alimentos:");
         HashSet all = AlimentoModel.listAll(con);
         Iterator<AlimentoBeen> it = all.iterator();

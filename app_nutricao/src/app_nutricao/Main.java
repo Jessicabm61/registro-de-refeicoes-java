@@ -26,10 +26,14 @@ public class Main {
         String tipoUsuario = "";
         int opcao;
         do {
-            System.out.println("Bem vindo ao Sistema de nutrição");
-            System.out.println("Escolha uma opção:");
-            System.out.println("1 - Login:");
-            System.out.println("2 - Cadastro:");
+            System.out.println("\n=====================================");
+            System.out.println("  BEM VINDO AO APLICATIVO DE NUTRICAO  ");
+            System.out.println("======================================\n");
+            System.out.println("Escolha uma opção");
+            System.out.println("1 - Login");
+            System.out.println("2 - Cadastro Nutricionista");
+            System.out.println("3 - Cadastro Paciente");
+            System.out.println("0 - Sair");
         
             opcao = scanner.nextInt();
             scanner.nextLine();
@@ -50,8 +54,22 @@ public class Main {
                 } else {
                     System.out.println("E-mail e senha incorretos");
                 }
+            } else
+            if(opcao == 2){
+                System.out.println("\n========================");
+                System.out.println("  CADASTRO NUTRICIONISTA  ");
+                System.out.println("========================\n");
+                tipoUsuario = "nutricionista";
+                usuarioController.cadastrarUsuario(con, tipoUsuario);
+            } else
+            if (opcao == 3){
+                System.out.println("\n===================");
+                System.out.println("  CADASTRO PACIENTE  ");
+                System.out.println("===================\n");
+               tipoUsuario = "paciente";
+               usuarioController.cadastrarUsuario(con, tipoUsuario);
             }
-        } while(tipoUsuario == null || (opcao != 1 && opcao != 2));
+        } while(tipoUsuario == null || (opcao != 0));
     }
     
     public static void exibirMenuPorTipo(String tipoUsuario, Connection con, UsuarioBeen usuarioLogado) throws SQLException{
@@ -62,9 +80,9 @@ public class Main {
             int opcaoNutricionista;
             do{
                 System.out.println(" ");
-                System.out.println("\n=====================");
+                System.out.println("\n====================");
                 System.out.println("  MENU NUTRICIONISTA  ");
-                System.out.println("=====================\n");
+                System.out.println("====================\n");
 
                 System.out.println(" ");
                 System.out.println("REFEICOES");
@@ -109,7 +127,7 @@ public class Main {
                     PlanoAlimentarController.excluirPlanoAlimentar(con);
                     break;
                 case 5:
-                    UsuarioController.cadastrarPaciente(con);
+                    UsuarioController.cadastrarUsuario(con, "paciente");
                     break;
                 case 6:
                     UsuarioController.vincularPlanoAlimentar(con);
@@ -121,15 +139,19 @@ public class Main {
                     UsuarioController.excluirPaciente(con);
                     break;
                 case 9:
-                    AlimentoController.listarAlimentos(con); 
+                    AlimentoController.listarAlimentos(con);
+                    break;
                 case 10:
                     RefeicaoController.listarRefeicoes(con);
-                break;
+                    break;
                 case 11:
                     UsuarioController.listarPacientes(con);
-                break;    
+                    break;    
                 case 12:
                     PlanoAlimentarController.listarPlanoAlimentar(con);
+                    break;
+                case 0:
+                    System.out.println("Saindo...");
                 default:
                     System.out.println("Opção inválida");
                     break;
@@ -140,9 +162,9 @@ public class Main {
             
         case "paciente":
             System.out.println(" ");
-            System.out.println("\n=====================");
+            System.out.println("\n======================");
             System.out.println("  MENU PACIENTE  ");
-            System.out.println("=====================\n");
+            System.out.println("======================\n");
             System.out.println("1 - Listar plano alimentar");
             System.out.println("0 - Sair");
             System.out.print("Escolha uma opção: ");
@@ -151,8 +173,6 @@ public class Main {
             
             switch (opcaoPaciente) {
             case "1":
-                // Chamar função para listar plano alimentar vinculado ao paciente
-                System.out.println("Listou?");
                 PlanoAlimentarController.listarPlanoAlimentarPorUsuario(con, usuarioLogado.getId_usuario());
                 break;
             case "0":

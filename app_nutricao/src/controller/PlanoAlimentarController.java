@@ -15,7 +15,9 @@ public class PlanoAlimentarController {
         Scanner scan = new Scanner(System.in);
         
         try{
-            System.out.println("Cadastrando plano alimentar...");
+            System.out.println("\n============================");
+            System.out.println("  CADASTRANDO PLANO ALIMENTAR ");
+            System.out.println("=============================\n");
             System.out.println("Descrição do plano alimentar:");
             String descricao = scan.next();
             PlanoAlimentarBean planoAlimentar = new PlanoAlimentarBean(descricao);
@@ -67,15 +69,24 @@ public class PlanoAlimentarController {
     }
     
      public static void listarPlanoAlimentar(Connection con) throws SQLException {
+        System.out.println("\n============================");
+        System.out.println("  LISTANDO PLANO ALIMENTAR ");
+        System.out.println("=============================\n");
         PlanoAlimentarModel.listarPlanoAlimentarComDetalhes(con);
     }
      
     // Método para listar os planos alimentares com detalhes, filtrado pelo id do usuário
     public static void listarPlanoAlimentarPorUsuario(Connection con, int idUsuario) throws SQLException {
+        System.out.println("\n====================================");
+        System.out.println("  LISTANDO PLANO ALIEMNTAR DO USUARIO ");
+        System.out.println("====================================\n");
         PlanoAlimentarModel.listarPlanoAlimentarPorUsuario(con, idUsuario);
     }
     
     public static void excluirPlanoAlimentar(Connection con) {
+        System.out.println("\n====================================");
+        System.out.println("  EXCLUINDO PLANO ALIMENTAR ");
+        System.out.println("====================================\n");
         Scanner scan = new Scanner(System.in);
         System.out.print("Digite o ID do plano alimentar que deseja excluir: ");
         int idPlano = Integer.parseInt(scan.nextLine());

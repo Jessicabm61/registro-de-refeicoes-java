@@ -30,21 +30,21 @@ public class UsuarioModel {
         }
     }
     
-    public static int inserirPaciente(Connection con, UsuarioBeen paciente){
+    public static int inserirUsuario(Connection con, UsuarioBeen usuario){
         String sql = "INSERT INTO usuario (nome, email, senha, data_nascimento, sexo, tipo_usuario) " +
                  "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, paciente.getNome());
-            stmt.setString(2, paciente.getEmail());
-            stmt.setString(3, paciente.getSenha());
-            stmt.setDate(4, (Date) paciente.getData_nascimento()); 
-            stmt.setString(5, String.valueOf(paciente.getSexo())); 
-            stmt.setString(6, paciente.getTipo_usuario());
+            stmt.setString(1, usuario.getNome());
+            stmt.setString(2, usuario.getEmail());
+            stmt.setString(3, usuario.getSenha());
+            stmt.setDate(4, (Date) usuario.getData_nascimento()); 
+            stmt.setString(5, String.valueOf(usuario.getSexo())); 
+            stmt.setString(6, usuario.getTipo_usuario());
 
             return stmt.executeUpdate(); // retorna 1 se inserção for bem-sucedida
         } catch (SQLException e) {
-            System.err.println("Erro ao inserir paciente: " + e.getMessage());
+            System.err.println("Erro ao inserir usuario: " + e.getMessage());
             return -1;
         }
     }

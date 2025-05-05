@@ -123,6 +123,11 @@ public class PlanoAlimentarModel {
         pst.setInt(1, idUsuario);  // Definindo o id do usuário logado na consulta
         ResultSet rs = pst.executeQuery();
 
+        if (!rs.next()){
+            System.out.println("Você não tem plano alimentar cadastrado, entre em cotato com o seu nutricionista");
+            return;
+        }
+        
         int planoAtual = -1;
         int refeicaoAtual = -1;
 

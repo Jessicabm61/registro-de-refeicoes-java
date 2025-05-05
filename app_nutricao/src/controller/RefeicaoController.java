@@ -20,7 +20,9 @@ public class RefeicaoController {
         
         //Coleta os dados para cadastrar a refeição
         try{
-            System.out.println("Cadastrando refeições...");
+            System.out.println("\n======================");
+            System.out.println("  CADASTRO DE REFEICAO  ");
+            System.out.println("======================\n");
             System.out.println("Nome da refeição:");
             String nome = scan.next();
             
@@ -69,10 +71,16 @@ public class RefeicaoController {
     }
     
     public static void listarRefeicoes(Connection con) throws SQLException {
+        System.out.println("\n======================");
+        System.out.println("  LISTA DE REFEICOES  ");
+        System.out.println("=======================\n");
         RefeicaoModel.listarRefeicoesComDetalhes(con);
     }
     
     public static void excluirRefeicao(Connection con) {
+        System.out.println("\n======================");
+        System.out.println("  EXCLUINDO REFEICAO  ");
+        System.out.println("=======================\n");
         Scanner scan = new Scanner(System.in);
         System.out.print("Digite o ID da refeição que deseja excluir: ");
         int idRefeicao = Integer.parseInt(scan.nextLine());
