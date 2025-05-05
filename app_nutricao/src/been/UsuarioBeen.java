@@ -40,6 +40,9 @@ public class UsuarioBeen {
         this.data_nascimento = data_nascimento;
         this.sexo = sexo;
     }
+     
+     public UsuarioBeen(){
+     }
     
     // Getters e Setters
     public int getId_usuario() {

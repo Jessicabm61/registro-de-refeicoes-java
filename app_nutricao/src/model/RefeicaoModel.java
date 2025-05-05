@@ -2,8 +2,8 @@
 package model;
 
 import been.RefeicaoBean;
-import java.sql.Statement;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Connection;
@@ -121,4 +121,31 @@ public class RefeicaoModel {
             System.out.println("--------------------------------------------------");
         }
     }
+    
+    public static boolean excluirRefeicao(Connection con, int idRefeicao) throws SQLException {
+        // Verificar se a refeição está vinculada a algum plano alimentar
+        String checkPlanoSql = "SELECT COUNT(*) FROM plano_alimentar_refeicao WHERE id_refeicao = ?";
+        try (PreparedStatement checkPlanoStmt = con.prepareStatement(checkPlanoSql)) {
+            checkPlanoStmt.setInt(1, idRefeicao);
+            ResultSet rsPlano = checkPlanoStmt.executeQuery();
+            if (rsPlano.next() && rsPlano.getInt(1) > 0) {
+                return false; // Existe vínculo com plano alimentar
+            }
+        }
+
+        // Excluir alimentos vinculados à refeição
+        String deleteAlimentosSql = "DELETE FROM alimento_refeicao WHERE id_refeicao = ?";
+        try (PreparedStatement deleteAlimentosStmt = con.prepareStatement(deleteAlimentosSql)) {
+            deleteAlimentosStmt.setInt(1, idRefeicao);
+            deleteAlimentosStmt.executeUpdate();
+        }
+
+        // Excluir a refeição
+        String deleteRefeicaoSql = "DELETE FROM refeicao WHERE id_refeicao = ?";
+        try (PreparedStatement deleteRefeicaoStmt = con.prepareStatement(deleteRefeicaoSql)) {
+            deleteRefeicaoStmt.setInt(1, idRefeicao);
+            int rowsAffected = deleteRefeicaoStmt.executeUpdate();
+            return rowsAffected > 0;
+        }
+        }
 }

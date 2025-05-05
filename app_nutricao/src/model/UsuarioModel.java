@@ -9,18 +9,23 @@ import java.sql.Statement;
 import java.util.HashSet;
 
 public class UsuarioModel {
-    public static String findTipoUsuarioEmailAndSenha(Connection con, String email, String senha) throws SQLException {
-        String sql = "SELECT tipo_usuario FROM usuario WHERE email = ? and senha = ?";
-     
+    public static UsuarioBeen findUsuarioPorEmailSenha(Connection con, String email, String senha) throws SQLException {
+        String sql = "SELECT id_usuario, nome, email, tipo_usuario FROM usuario WHERE email = ? AND senha = ?";
+        
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setString(1, email);
         pst.setString(2, senha);
         
-        ResultSet result = pst.executeQuery();
+        ResultSet rs = pst.executeQuery();
         
-        if (result.next()){
-            return result.getString("tipo_usuario");
-        }else {
+        if (rs.next()) {
+            UsuarioBeen usuario = new UsuarioBeen();
+            usuario.setId_usuario(rs.getInt("id_usuario"));
+            usuario.setNome(rs.getString("nome"));
+            usuario.setEmail(rs.getString("email"));
+            usuario.setTipo_usuario(rs.getString("tipo_usuario"));
+            return usuario;
+        } else {
             return null;
         }
     }
@@ -54,5 +59,57 @@ public class UsuarioModel {
             list.add(new UsuarioBeen(result.getInt(1),result.getString(2), result.getString(3), result.getDate(4), result.getString(5).charAt(0)));
         }
         return list;
+    }
+    
+    public static boolean excluirPaciente(Connection con, int idPaciente) throws SQLException {
+        // Excluir vínculos da tabela plano_alimentar_paciente
+        String deleteVinculosSql = "DELETE FROM plano_alimentar_usuario WHERE id_usuario = ?";
+        try (PreparedStatement stmtVinculo = con.prepareStatement(deleteVinculosSql)) {
+            stmtVinculo.setInt(1, idPaciente);
+            stmtVinculo.executeUpdate();
+        }
+
+        // Excluir o usuário (paciente)
+        String deletePacienteSql = "DELETE FROM usuario WHERE id_usuario = ?";
+        try (PreparedStatement stmtDelete = con.prepareStatement(deletePacienteSql)) {
+            stmtDelete.setInt(1, idPaciente);
+            int rowsAffected = stmtDelete.executeUpdate();
+            return rowsAffected > 0;
+        }
+    }
+    
+    public static UsuarioBeen buscarPacientePorId(Connection con, int id) throws SQLException {
+        String sql = "SELECT * FROM usuario WHERE id_usuario = ? AND tipo_usuario = 'paciente'";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new UsuarioBeen(
+                    rs.getInt("id_usuario"),
+                    rs.getString("nome"),
+                    rs.getString("email"),
+                    rs.getString("senha"),
+                    rs.getDate("data_nascimento"),
+                    rs.getString("sexo").charAt(0),
+                    rs.getString("tipo_usuario")
+                );
+            }
+            return null;
+        }
+    }
+
+    public static boolean atualizarPaciente(Connection con, UsuarioBeen paciente) throws SQLException {
+        String sql = "UPDATE usuario SET nome = ?, email = ?, senha = ?, data_nascimento = ?, sexo = ? WHERE id_usuario = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setString(1, paciente.getNome());
+            stmt.setString(2, paciente.getEmail());
+            stmt.setString(3, paciente.getSenha());
+            stmt.setDate(4, new java.sql.Date(paciente.getData_nascimento().getTime()));
+            stmt.setString(5, String.valueOf(paciente.getSexo()));
+            stmt.setInt(6, paciente.getId_usuario());
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        }
     }
 }

@@ -71,5 +71,23 @@ public class RefeicaoController {
     public static void listarRefeicoes(Connection con) throws SQLException {
         RefeicaoModel.listarRefeicoesComDetalhes(con);
     }
+    
+    public static void excluirRefeicao(Connection con) {
+        Scanner scan = new Scanner(System.in);
+        System.out.print("Digite o ID da refeição que deseja excluir: ");
+        int idRefeicao = Integer.parseInt(scan.nextLine());
+
+        try {
+            boolean sucesso = RefeicaoModel.excluirRefeicao(con, idRefeicao);
+            if (sucesso) {
+                System.out.println("Refeição excluída com sucesso.");
+            } else {
+                System.out.println("Não foi possível excluir a refeição. Ela pode estar vinculada a algum plano alimentar.");
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao excluir a refeição:");
+            e.printStackTrace();
+        }
+    }
 }
 
