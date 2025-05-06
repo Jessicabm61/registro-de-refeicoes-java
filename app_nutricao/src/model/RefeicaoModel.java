@@ -73,6 +73,7 @@ public class RefeicaoModel {
 
             if (idRefeicao != idRefeicaoAtual && idRefeicaoAtual != -1) {
                 // Imprimir dados da refeição anterior
+                System.out.println("ID da refeicao: " + idRefeicao);
                 System.out.println("Nome da Refeição: " + nomeRefeicao);
                 System.out.println("Descrição: " + descricao);
                 System.out.println("Total Calorias: " + totalCalorias);

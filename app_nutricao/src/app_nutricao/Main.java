@@ -56,16 +56,10 @@ public class Main {
                 }
             } else
             if(opcao == 2){
-                System.out.println("\n========================");
-                System.out.println("  CADASTRO NUTRICIONISTA  ");
-                System.out.println("========================\n");
                 tipoUsuario = "nutricionista";
                 usuarioController.cadastrarUsuario(con, tipoUsuario);
             } else
             if (opcao == 3){
-                System.out.println("\n===================");
-                System.out.println("  CADASTRO PACIENTE  ");
-                System.out.println("===================\n");
                tipoUsuario = "paciente";
                usuarioController.cadastrarUsuario(con, tipoUsuario);
             }
