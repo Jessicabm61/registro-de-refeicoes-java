@@ -1,30 +1,33 @@
 package model;
 
-import java.sql.Connection;
+import org.neo4j.driver.*;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class PlanoPacienteModel {
-     public static boolean vincularPlanoAoPaciente(Connection con, int idPlano, int idUsuario, Date dataInicio, Date dataFim) throws SQLException {
-        String sql = """
-            INSERT INTO plano_alimentar_usuario (id_plano, id_usuario, data_inicio, data_fim)
-            VALUES (?, ?, ?, ?)
-        """;
 
-        PreparedStatement pst = con.prepareStatement(sql);
-        pst.setInt(1, idPlano);
-        pst.setInt(2, idUsuario);
-        pst.setDate(3, dataInicio);
+    public static boolean vincularPlanoAoPaciente(Driver driver, String nomePlano, String nomeUsuario, Date dataInicio, Date dataFim) {
+        try (Session session = driver.session()) {
+            return session.writeTransaction(tx -> {
 
-        if (dataFim != null) {
-            pst.setDate(4, dataFim);
-        } else {
-            pst.setNull(4, java.sql.Types.DATE);
+                String query = """
+                    MATCH (u:Usuario {nome: $nomeUsuario}), (p:PlanoAlimentar {descricao: $nomePlano})
+                    MERGE (u)-[r:TEM_PLANO]->(p)
+                    SET r.data_inicio = $dataInicio,
+                        r.data_fim = $dataFim
+                """;
+
+                tx.run(query, Values.parameters(
+                        "nomeUsuario", nomeUsuario,
+                        "nomePlano", nomePlano,
+                        "dataInicio", dataInicio.toString(),
+                        "dataFim", (dataFim != null) ? dataFim.toString() : null
+                ));
+
+                return true;
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-
-        int linhasAfetadas = pst.executeUpdate();
-        return linhasAfetadas > 0;
     }
-    
 }

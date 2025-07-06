@@ -1,27 +1,25 @@
-
 package model;
 
 import java.sql.Time;
-import been.RefeicaoBean;
 
 public class RefeicaoHorario {
-    private int idRefeicao;
+    private String nomeRefeicao;
     private Time horaRefeicao;
 
 
-    public RefeicaoHorario(int idRefeicao, Time horaRefeicao){
-        this.idRefeicao = idRefeicao;
+    public RefeicaoHorario(String nomeRefeicao, Time horaRefeicao){
+        this.nomeRefeicao = nomeRefeicao;
         this.horaRefeicao = horaRefeicao;
     }
     
     // Getter para idRefeicao
-    public int getIdRefeicao() {
-        return idRefeicao;
+    public String getNomeRefeicao() {
+        return nomeRefeicao;
     }
 
     // Setter para idRefeicao
-    public void setIdRefeicao(int idRefeicao) {
-        this.idRefeicao = idRefeicao;
+    public void setNomeRefeicao(String nomeRefeicao) {
+        this.nomeRefeicao = nomeRefeicao;
     }
 
     // Getter para horaRefeicao

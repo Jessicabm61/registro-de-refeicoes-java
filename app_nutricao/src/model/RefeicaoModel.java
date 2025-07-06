@@ -1,152 +1,156 @@
-
 package model;
 
 import been.RefeicaoBean;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import model.AlimentoQuantidade;
-
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Values;
+import java.util.List;
 
 public class RefeicaoModel {
-    public static boolean inserirRefeicaoComAlimentos(Connection con, RefeicaoBean refeicao) throws SQLException {
-        String insertRefeicaoSQL = "INSERT INTO refeicao (nome_refeicao, descricao) VALUES (?, ?)";
-        PreparedStatement pstRefeicao = con.prepareStatement(insertRefeicaoSQL, Statement.RETURN_GENERATED_KEYS);
-        pstRefeicao.setString(1, refeicao.getNome());
-        pstRefeicao.setString(2, refeicao.getDescricao());
-        pstRefeicao.executeUpdate();
 
-        ResultSet rs = pstRefeicao.getGeneratedKeys();
-        int idRefeicao = 0;
-        if (rs.next()) {
-            idRefeicao = rs.getInt(1);
+    // Inserir refeição e associar alimentos
+    public static boolean inserirRefeicaoComAlimentos(Driver driver, RefeicaoBean refeicao) {
+        try (Session session = driver.session()) {
+            
+            session.writeTransaction(tx -> {
+                // Criar refeição
+                String createRefeicao = """
+                    CREATE (r:Refeicao {nome: $nome, descricao: $descricao})
+                    RETURN id(r) AS idRefeicao
+                """;
+
+                Result result = tx.run(createRefeicao, Values.parameters(
+                        "nome", refeicao.getNome(),
+                        "descricao", refeicao.getDescricao()
+                ));
+
+                long idRefeicao = result.single().get("idRefeicao").asLong();
+
+                // Relacionar alimentos à refeição
+                for (AlimentoQuantidade aq : refeicao.getAlimentos()) {
+                    String linkAlimento = """
+                        MATCH (r:Refeicao), (a:alimento {id_alimento: $idAlimento})
+                        WHERE id(r) = $idRefeicao
+                        MERGE (r)-[:INCLUI {quantidade: $quantidade}]->(a)
+                    """;
+                    tx.run(linkAlimento, Values.parameters(
+                            "idRefeicao", idRefeicao,
+                            "idAlimento", aq.getAlimento().getIdAlimento(),
+                            "quantidade", aq.getQuantidade()
+                    ));
+                }
+
+                return null;
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
 
-        String insertAlimentoSQL = "INSERT INTO alimento_refeicao (id_refeicao, id_alimento, quantidade) VALUES (?, ?, ?)";
-        PreparedStatement pstAlimento = con.prepareStatement(insertAlimentoSQL);
-
-        for (AlimentoQuantidade aq : refeicao.getAlimentos()) {
-            pstAlimento.setInt(1, idRefeicao);
-            pstAlimento.setInt(2, aq.getAlimento().getIdAlimento());
-            pstAlimento.setDouble(3, aq.getQuantidade());
-            pstAlimento.addBatch();
-        }
-
-        pstAlimento.executeBatch();
         return true;
     }
-    
-    public static void listarRefeicoesComDetalhes(Connection con) throws SQLException {
-        String sql = """
-            SELECT 
-                r.id_refeicao,
-                r.nome_refeicao,
-                r.descricao,
-                a.id_alimento,
-                a.nome_alimento,
-                ar.quantidade,
-                a.calorias,
-                a.proteinas,
-                a.carboidratos
-            FROM refeicao r
-            JOIN alimento_refeicao ar ON r.id_refeicao = ar.id_refeicao
-            JOIN alimento a ON ar.id_alimento = a.id_alimento
-            ORDER BY r.id_refeicao
+
+    // Listar refeições com detalhes e total de nutrientes
+    public static void listarRefeicoesComDetalhes(Driver driver) {
+        try (Session session = driver.session()) {
+            String query = """
+                MATCH (r:Refeicao)-[rel:INCLUI]->(a:alimento)
+                RETURN id(r) AS idRefeicao, r.nome AS nome, r.descricao AS descricao,
+                       a.id_alimento AS idAlimento, a.nome_alimento AS nomeAlimento,
+                       rel.quantidade AS quantidade,
+                       a.calorias AS calorias,
+                       a.proteinas AS proteinas,
+                       a.carboidratos AS carboidratos
+                ORDER BY idRefeicao
             """;
 
-        PreparedStatement pst = con.prepareStatement(sql);
-        ResultSet rs = pst.executeQuery();
+            session.readTransaction(tx -> {
+                Result rs = tx.run(query);
 
-        int idRefeicaoAtual = -1;
-        String nomeRefeicao = "", descricao = "";
-        double totalCalorias = 0, totalProteinas = 0, totalCarboidratos = 0;
+                long idRefeicaoAtual = -1;
+                String nomeRefeicao = "", descricao = "";
+                double totalCalorias = 0, totalProteinas = 0, totalCarboidratos = 0;
+                List<String> alimentos = new java.util.ArrayList<>();
 
-        List<String> alimentos = new ArrayList<>();
+                while (rs.hasNext()) {
+                    org.neo4j.driver.Record row = rs.next();
+                    long idRefeicao = row.get("idRefeicao").asLong();
 
-        while (rs.next()) {
-            int idRefeicao = rs.getInt("id_refeicao");
+                    if (idRefeicao != idRefeicaoAtual && idRefeicaoAtual != -1) {
+                        // Imprimir anterior
+                        System.out.println("Nome da Refeição: " + nomeRefeicao);
+                        System.out.println("Descrição: " + descricao);
+                        System.out.println("Total Calorias: " + totalCalorias);
+                        System.out.println("Total Proteínas: " + totalProteinas);
+                        System.out.println("Total Carboidratos: " + totalCarboidratos);
+                        for (String alimento : alimentos) System.out.println(alimento);
+                        System.out.println("--------------------------------------------------");
 
-            if (idRefeicao != idRefeicaoAtual && idRefeicaoAtual != -1) {
-                // Imprimir dados da refeição anterior
-                System.out.println("ID da refeicao: " + idRefeicao);
-                System.out.println("Nome da Refeição: " + nomeRefeicao);
-                System.out.println("Descrição: " + descricao);
-                System.out.println("Total Calorias: " + totalCalorias);
-                System.out.println("Total Proteínas: " + totalProteinas);
-                System.out.println("Total Carboidratos: " + totalCarboidratos);
-                for (String alimento : alimentos) {
-                    System.out.println(alimento);
+                        totalCalorias = 0;
+                        totalProteinas = 0;
+                        totalCarboidratos = 0;
+                        alimentos.clear();
+                    }
+
+                    idRefeicaoAtual = idRefeicao;
+                    nomeRefeicao = row.get("nome").asString();
+                    descricao = row.get("descricao").asString();
+
+                    double qtd = row.get("quantidade").asDouble();
+                    totalCalorias += row.get("calorias").asDouble() * qtd;
+                    totalProteinas += row.get("proteinas").asDouble() * qtd;
+                    totalCarboidratos += row.get("carboidratos").asDouble() * qtd;
+
+                    String alimentoInfo = String.format("ID Alimento: %d  Nome Alimento: %s",
+                            row.get("idAlimento").asInt(),
+                            row.get("nomeAlimento").asString());
+                    alimentos.add(alimentoInfo);
                 }
-                System.out.println("--------------------------------------------------");
 
-                // Resetar valores
-                totalCalorias = 0;
-                totalProteinas = 0;
-                totalCarboidratos = 0;
-                alimentos.clear();
-            }
+                if (idRefeicaoAtual != -1) {
+                    System.out.println("Nome da Refeição: " + nomeRefeicao);
+                    System.out.println("Descrição: " + descricao);
+                    System.out.println("Total Calorias: " + totalCalorias);
+                    System.out.println("Total Proteínas: " + totalProteinas);
+                    System.out.println("Total Carboidratos: " + totalCarboidratos);
+                    for (String alimento : alimentos) System.out.println(alimento);
+                    System.out.println("--------------------------------------------------");
+                }
 
-            idRefeicaoAtual = idRefeicao;
-            nomeRefeicao = rs.getString("nome_refeicao");
-            descricao = rs.getString("descricao");
-
-            double qtd = rs.getDouble("quantidade");
-
-            totalCalorias += rs.getDouble("calorias") * qtd;
-            totalProteinas += rs.getDouble("proteinas") * qtd;
-            totalCarboidratos += rs.getDouble("carboidratos") * qtd;
-
-            String alimentoInfo = String.format(
-                "ID Alimento: %d  Nome Alimento: %s",
-                rs.getInt("id_alimento"),
-                rs.getString("nome_alimento")
-            );
-            alimentos.add(alimentoInfo);
-        }
-
-        // Imprimir a última refeição
-        if (idRefeicaoAtual != -1) {
-            System.out.println("Nome da Refeição: " + nomeRefeicao);
-            System.out.println("Descrição: " + descricao);
-            System.out.println("Total Calorias: " + totalCalorias);
-            System.out.println("Total Proteínas: " + totalProteinas);
-            System.out.println("Total Carboidratos: " + totalCarboidratos);
-            for (String alimento : alimentos) {
-                System.out.println(alimento);
-            }
-            System.out.println("--------------------------------------------------");
+                return null;
+            });
         }
     }
-    
-    public static boolean excluirRefeicao(Connection con, int idRefeicao) throws SQLException {
-        // Verificar se a refeição está vinculada a algum plano alimentar
-        String checkPlanoSql = "SELECT COUNT(*) FROM plano_alimentar_refeicao WHERE id_refeicao = ?";
-        try (PreparedStatement checkPlanoStmt = con.prepareStatement(checkPlanoSql)) {
-            checkPlanoStmt.setInt(1, idRefeicao);
-            ResultSet rsPlano = checkPlanoStmt.executeQuery();
-            if (rsPlano.next() && rsPlano.getInt(1) > 0) {
-                return false; // Existe vínculo com plano alimentar
-            }
-        }
 
-        // Excluir alimentos vinculados à refeição
-        String deleteAlimentosSql = "DELETE FROM alimento_refeicao WHERE id_refeicao = ?";
-        try (PreparedStatement deleteAlimentosStmt = con.prepareStatement(deleteAlimentosSql)) {
-            deleteAlimentosStmt.setInt(1, idRefeicao);
-            deleteAlimentosStmt.executeUpdate();
-        }
+    // Excluir uma refeição (se não estiver vinculada a nenhum plano)
+    public static boolean excluirRefeicao(Driver driver, String nomeRefeicao) {
+        try (Session session = driver.session()) {
+            return session.writeTransaction(tx -> {
+                // Verifica vínculo com plano
+                String checkVinculo = """
+                    MATCH (:PlanoAlimentar)-[:CONTEM]->(r:Refeicao)
+                    WHERE r.nome = $nomeRefeicao
+                    RETURN COUNT(*) AS total
+                """;
+                Result res = tx.run(checkVinculo, Values.parameters("nomeRefeicao", nomeRefeicao));
+                int total = res.single().get("total").asInt();
 
-        // Excluir a refeição
-        String deleteRefeicaoSql = "DELETE FROM refeicao WHERE id_refeicao = ?";
-        try (PreparedStatement deleteRefeicaoStmt = con.prepareStatement(deleteRefeicaoSql)) {
-            deleteRefeicaoStmt.setInt(1, idRefeicao);
-            int rowsAffected = deleteRefeicaoStmt.executeUpdate();
-            return rowsAffected > 0;
+                if (total > 0) return false;
+
+                // Deleta a refeição e os relacionamentos
+                String delete = """
+                    MATCH (r:Refeicao)
+                    WHERE r.nome = $nomeRefeicao
+                    DETACH DELETE r
+                """;
+                tx.run(delete, Values.parameters("nomeRefeicao", nomeRefeicao));
+                return true;
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        }
+    }
 }

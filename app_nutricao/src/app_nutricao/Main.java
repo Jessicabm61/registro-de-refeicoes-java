@@ -3,22 +3,19 @@ package app_nutricao;
 
 import been.UsuarioBeen;
 import config.Conexao;
-import controller.AlimentoController;
 import controller.UsuarioController;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.ParseException;
 import controller.RefeicaoController;
 import java.util.Scanner;
 import controller.AlimentoController;
 import controller.PlanoAlimentarController;
-
+import org.neo4j.driver.Driver;
 
 public class Main {
 
     public static void main(String[] args) throws SQLException {
         Conexao c = new Conexao();
-        Connection con = c.getConnection();
+        Driver con = c.getDriver(); 
         
         Scanner scanner = new Scanner(System.in);
         UsuarioController usuarioController = new UsuarioController();
@@ -66,7 +63,7 @@ public class Main {
         } while(tipoUsuario == null || (opcao != 0));
     }
     
-    public static void exibirMenuPorTipo(String tipoUsuario, Connection con, UsuarioBeen usuarioLogado) throws SQLException{
+    public static void exibirMenuPorTipo(String tipoUsuario, Driver con, UsuarioBeen usuarioLogado) throws SQLException{
         Scanner scanner = new Scanner(System.in);
         switch (tipoUsuario) {
         case "nutricionista":
@@ -89,7 +86,7 @@ public class Main {
                 System.out.println("4 - Excluir plano alimentar");
                 
                 System.out.println(" ");
-                System.out.println("PACIENTES");
+                System.out.println("MENU PACIENTE");
                 System.out.println("5 - Cadastrar paciente");
                 System.out.println("6 - Vincular plano alimentar a paciente");
                 System.out.println("7 - Editar paciente");
@@ -167,7 +164,7 @@ public class Main {
             
             switch (opcaoPaciente) {
             case "1":
-                PlanoAlimentarController.listarPlanoAlimentarPorUsuario(con, usuarioLogado.getId_usuario());
+                PlanoAlimentarController.listarPlanoAlimentarPorUsuario(con, usuarioLogado.getNome());
                 break;
             case "0":
                 System.out.println("Saindo...");

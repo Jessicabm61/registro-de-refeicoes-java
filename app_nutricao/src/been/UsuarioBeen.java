@@ -5,7 +5,6 @@ import java.util.Date;
 
 public class UsuarioBeen {
     
-    private int id_usuario;
     private String nome;
     private String email;
     private String senha;
@@ -14,16 +13,6 @@ public class UsuarioBeen {
     private String tipo_usuario;
     
     // Construtor
-    public UsuarioBeen(int id_usuario, String nome, String email, String senha, Date data_nascimento, char sexo, String tipo_usuario) {
-        this.id_usuario = id_usuario;
-        this.nome = nome;
-        this.email = email;
-        this.senha = senha;
-        this.data_nascimento = data_nascimento;
-        this.sexo = sexo;
-        this.tipo_usuario = tipo_usuario;
-    }
-    
     public UsuarioBeen(String nome, String email, String senha, Date data_nascimento, char sexo, String tipo_usuario) {
         this.nome = nome;
         this.email = email;
@@ -33,9 +22,8 @@ public class UsuarioBeen {
         this.tipo_usuario = tipo_usuario;
     }
     
-     public UsuarioBeen(int id_usuario, String nome, String email, Date data_nascimento, char sexo) {
-        this.id_usuario = id_usuario;
-         this.nome = nome;
+     public UsuarioBeen(String nome, String email, Date data_nascimento, char sexo) {
+        this.nome = nome;
         this.email = email;
         this.data_nascimento = data_nascimento;
         this.sexo = sexo;
@@ -43,15 +31,6 @@ public class UsuarioBeen {
      
      public UsuarioBeen(){
      }
-    
-    // Getters e Setters
-    public int getId_usuario() {
-        return id_usuario;
-    }
-
-    public void setId_usuario(int id_usuario) {
-        this.id_usuario = id_usuario;
-    }
 
     public String getNome() {
         return nome;
@@ -104,8 +83,8 @@ public class UsuarioBeen {
     @Override
     public String toString() {
         return String.format(
-            "ID: %-5d | Nome: %-20s | E-mail: %-30s | Data Nascimento: %-12s | Sexo: %-2s",
-            id_usuario, nome, email, new SimpleDateFormat("dd/MM/yyyy").format(data_nascimento), sexo
+            "Nome: %-20s | E-mail: %-30s | Data Nascimento: %-12s | Sexo: %-2s",
+            nome, email, new SimpleDateFormat("dd/MM/yyyy").format(data_nascimento), sexo
         );
     }
 }

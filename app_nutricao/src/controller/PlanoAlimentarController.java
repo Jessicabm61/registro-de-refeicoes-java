@@ -1,39 +1,38 @@
 package controller;
+
 import been.PlanoAlimentarBean;
-import java.sql.Connection; 
 import java.util.Scanner;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import model.PlanoAlimentarModel;
 import model.RefeicaoHorario;
-import java.sql.SQLException;
+import org.neo4j.driver.Driver;
 
 public class PlanoAlimentarController {
-    public static void createPlanoAlimentar(Connection con){
-        
+
+    public static void createPlanoAlimentar(Driver driver) {
         Scanner scan = new Scanner(System.in);
-        
-        try{
+
+        try {
             System.out.println("\n============================");
             System.out.println("  CADASTRANDO PLANO ALIMENTAR ");
             System.out.println("=============================\n");
             System.out.println("Descrição do plano alimentar:");
-            String descricao = scan.next();
+            String descricao = scan.nextLine();
+
             PlanoAlimentarBean planoAlimentar = new PlanoAlimentarBean(descricao);
-            
-            //Monta a lista de refeicoes
-            List<RefeicaoHorario> refeicoes = new ArrayList();
+
+            // Monta a lista de refeições
+            List<RefeicaoHorario> refeicoes = new ArrayList<>();
             String continuar;
-            
+
             do {
-                System.out.println("Vinculando refeições ao plano aliemntar");
-                
-                System.out.println("Digite um código de refeição");
-                int codigoRefeicao = scan.nextInt();
-                scan.nextLine();
-           
-                //Seleciona um horário para refeicao
+                System.out.println("Vinculando refeições ao plano alimentar");
+
+                System.out.println("Digite o nome da refeição refeição");
+                String nomeRefeicao = scan.nextLine();
+
                 System.out.println("Digite um horário para a refeição (HH:mm:ss):");
                 String horaStr = scan.nextLine();
 
@@ -44,61 +43,70 @@ public class PlanoAlimentarController {
                 } catch (IllegalArgumentException e) {
                     System.out.println("Formato inválido! Use HH:mm:ss");
                 }
-                
-                //Cria uma Refeicao com Horario e seta na lista do plano alimentar
-                RefeicaoHorario refeicaoHorario = new RefeicaoHorario(codigoRefeicao, horario);
+
+                RefeicaoHorario refeicaoHorario = new RefeicaoHorario(nomeRefeicao, horario);
                 refeicoes.add(refeicaoHorario);
-                
-                System.out.println("Deseja adicionar outra refeicao? (s/n)");
+
+                System.out.println("Deseja adicionar outra refeição? (s/n)");
                 continuar = scan.nextLine();
-            }while (continuar.equalsIgnoreCase("s"));
-            
-            //Seta a lista de refeicoes no plano alimentar
+            } while (continuar.equalsIgnoreCase("s"));
+
             planoAlimentar.setRefeicao(refeicoes);
-            
-            //Chama a Model para inserir no Banco de dados
-            if (PlanoAlimentarModel.inserirPlanoAlimentar(con, planoAlimentar)) {
-                System.out.println("Refeição cadastrada com sucesso!");
+
+            if (PlanoAlimentarModel.inserirPlanoAlimentar(driver, planoAlimentar)) {
+                System.out.println("Plano alimentar cadastrado com sucesso!");
             } else {
-                System.out.println("Erro ao cadastrar refeição.");
+                System.out.println("Erro ao cadastrar plano alimentar.");
             }
-            
-        }catch(Exception e){
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
-     public static void listarPlanoAlimentar(Connection con) throws SQLException {
+
+    public static void listarPlanoAlimentar(Driver driver) {
         System.out.println("\n============================");
         System.out.println("  LISTANDO PLANO ALIMENTAR ");
         System.out.println("=============================\n");
-        PlanoAlimentarModel.listarPlanoAlimentarComDetalhes(con);
+
+        try {
+            PlanoAlimentarModel.listarPlanoAlimentarComDetalhes(driver);
+        } catch (Exception e) {
+            System.err.println("Erro ao listar planos alimentares:");
+            e.printStackTrace();
+        }
     }
-     
-    // Método para listar os planos alimentares com detalhes, filtrado pelo id do usuário
-    public static void listarPlanoAlimentarPorUsuario(Connection con, int idUsuario) throws SQLException {
+
+    public static void listarPlanoAlimentarPorUsuario(Driver driver, String nomeUsuario) {
         System.out.println("\n====================================");
-        System.out.println("  LISTANDO PLANO ALIEMNTAR DO USUARIO ");
+        System.out.println("  LISTANDO PLANO ALIMENTAR DO USUARIO ");
         System.out.println("====================================\n");
-        PlanoAlimentarModel.listarPlanoAlimentarPorUsuario(con, idUsuario);
+
+        try {
+            PlanoAlimentarModel.listarPlanoAlimentarPorUsuario(driver, nomeUsuario);
+        } catch (Exception e) {
+            System.err.println("Erro ao listar planos alimentares do usuário:");
+            e.printStackTrace();
+        }
     }
-    
-    public static void excluirPlanoAlimentar(Connection con) {
+
+    public static void excluirPlanoAlimentar(Driver driver) {
         System.out.println("\n====================================");
         System.out.println("  EXCLUINDO PLANO ALIMENTAR ");
         System.out.println("====================================\n");
-        Scanner scan = new Scanner(System.in);
-        System.out.print("Digite o ID do plano alimentar que deseja excluir: ");
-        int idPlano = Integer.parseInt(scan.nextLine());
 
+        Scanner scan = new Scanner(System.in);
+        System.out.print("Digite o nome do plano alimentar que deseja excluir: ");
+        String nomePlano = scan.nextLine();
+        
         try {
-            boolean sucesso = PlanoAlimentarModel.excluirPlanoAlimentar(con, idPlano);
+            boolean sucesso = PlanoAlimentarModel.excluirPlanoAlimentar(driver, nomePlano);
             if (sucesso) {
                 System.out.println("Plano alimentar excluído com sucesso.");
             } else {
                 System.out.println("Não foi possível excluir o plano. Ele está vinculado a um paciente.");
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             System.err.println("Erro ao tentar excluir o plano alimentar:");
             e.printStackTrace();
         }

@@ -1,27 +1,37 @@
-
 package model;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashSet;
 import been.AlimentoBeen;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import java.util.HashSet;
+import org.neo4j.driver.Driver;
 
 public class AlimentoModel {
 
-    public static HashSet listAll(Connection con) throws SQLException{
-        Statement st;
-        HashSet list = new HashSet();
-        st = con.createStatement();
-        String sql = "SELECT id_alimento, nome_alimento, calorias, proteinas, carboidratos FROM alimento";
-        ResultSet result = st.executeQuery(sql); //retorna uma lista e salva no Resultset result
-        while(result.next()) {
-            list.add(new AlimentoBeen(result.getInt(1),result.getString(2), result.getDouble(3), result.getDouble(4),
-            		result.getInt(5))); //para cada elemento da lista cria um been do modelo (em memoria) e passa os parametros pelo construtor
-        }
-        return list;
-    }
-}
+   public static HashSet<AlimentoBeen> listAll(Driver driver) {
+    HashSet<AlimentoBeen> list = new HashSet<>();
 
+    String cypher = "MATCH (a:alimento) RETURN a.id_alimento AS id, a.nome_alimento AS nome, " +
+                    "a.calorias AS calorias, a.proteinas AS proteinas, a.carboidratos AS carboidratos";
+
+    try (Session session = driver.session()) {
+        Result result = session.run(cypher);
+
+        while (result.hasNext()) {
+            var record = result.next();
+
+            int id = record.get("id").asInt();
+            String nome = record.get("nome").asString();
+            double calorias = record.get("calorias").asDouble();
+            double proteinas = record.get("proteinas").asDouble();
+            double carboidratosDouble = record.get("carboidratos").asDouble();
+            int carboidratos = (int) Math.round(carboidratosDouble);
+
+
+            list.add(new AlimentoBeen(id, nome, calorias, proteinas, carboidratos));
+        }
+    }
+
+    return list;
+}
+}

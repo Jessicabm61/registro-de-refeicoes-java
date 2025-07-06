@@ -1,115 +1,173 @@
 package model;
+
 import been.UsuarioBeen;
-import java.sql.Connection;
+import org.neo4j.driver.*;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashSet;
 
 public class UsuarioModel {
-    public static UsuarioBeen findUsuarioPorEmailSenha(Connection con, String email, String senha) throws SQLException {
-        String sql = "SELECT id_usuario, nome, email, tipo_usuario FROM usuario WHERE email = ? AND senha = ?";
-        
-        PreparedStatement pst = con.prepareStatement(sql);
-        pst.setString(1, email);
-        pst.setString(2, senha);
-        
-        ResultSet rs = pst.executeQuery();
-        
-        if (rs.next()) {
-            UsuarioBeen usuario = new UsuarioBeen();
-            usuario.setId_usuario(rs.getInt("id_usuario"));
-            usuario.setNome(rs.getString("nome"));
-            usuario.setEmail(rs.getString("email"));
-            usuario.setTipo_usuario(rs.getString("tipo_usuario"));
-            return usuario;
-        } else {
-            return null;
+
+    // Buscar usuário por e-mail e senha
+    public static UsuarioBeen findUsuarioPorEmailSenha(Driver driver, String email, String senha) {
+        try (Session session = driver.session()) {
+            return session.readTransaction(tx -> {
+                String query = """
+                    MATCH (u:Usuario {email: $email, senha: $senha})
+                    RETURN u
+                """;
+                Result result = tx.run(query, Values.parameters("email", email, "senha", senha));
+                if (result.hasNext()) {
+                    var u = result.single().get("u").asNode();
+                    return new UsuarioBeen(
+                        u.get("nome").asString(),
+                        u.get("email").asString(),
+                        u.get("senha").asString(),
+                        Date.valueOf(u.get("data_nascimento").asString()),
+                        u.get("sexo").asString().charAt(0),
+                        u.get("tipo_usuario").asString()
+                    );
+                } else {
+                    return null;
+                }
+            });
         }
     }
-    
-    public static int inserirUsuario(Connection con, UsuarioBeen usuario){
-        String sql = "INSERT INTO usuario (nome, email, senha, data_nascimento, sexo, tipo_usuario) " +
-                 "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, usuario.getNome());
-            stmt.setString(2, usuario.getEmail());
-            stmt.setString(3, usuario.getSenha());
-            stmt.setDate(4, (Date) usuario.getData_nascimento()); 
-            stmt.setString(5, String.valueOf(usuario.getSexo())); 
-            stmt.setString(6, usuario.getTipo_usuario());
-
-            return stmt.executeUpdate(); // retorna 1 se inserção for bem-sucedida
-        } catch (SQLException e) {
-            System.err.println("Erro ao inserir usuario: " + e.getMessage());
-            return -1;
+    // Inserir novo usuário
+    public static boolean inserirUsuario(Driver driver, UsuarioBeen usuario) {
+        try (Session session = driver.session()) {
+            session.writeTransaction(tx -> {
+                String query = """
+                    CREATE (u:Usuario {
+                        nome: $nome,
+                        email: $email,
+                        senha: $senha,
+                        data_nascimento: $data_nascimento,
+                        sexo: $sexo,
+                        tipo_usuario: $tipo_usuario
+                    })
+                """;
+                tx.run(query, Values.parameters(
+                    "nome", usuario.getNome(),
+                    "email", usuario.getEmail(),
+                    "senha", usuario.getSenha(),
+                    "data_nascimento", usuario.getData_nascimento().toString(),
+                    "sexo", String.valueOf(usuario.getSexo()),
+                    "tipo_usuario", usuario.getTipo_usuario()
+                ));
+                return null;
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erro ao inserir usuário: " + e.getMessage());
+            return false;
         }
     }
-    
-    public static HashSet<UsuarioBeen> listAllPacientes(Connection con) throws SQLException{
-        Statement st;
-        HashSet <UsuarioBeen>list = new HashSet();
-        st = con.createStatement();
-        String sql = "SELECT id_usuario, nome, email, data_nascimento, sexo FROM usuario WHERE tipo_usuario = 'paciente'";
-        ResultSet result = st.executeQuery(sql); //retorna uma lista e salva no Resultset result
-        while(result.next()) {
-            list.add(new UsuarioBeen(result.getInt(1),result.getString(2), result.getString(3), result.getDate(4), result.getString(5).charAt(0)));
+
+    // Listar todos os pacientes
+    public static HashSet<UsuarioBeen> listAllPacientes(Driver driver) {
+        HashSet<UsuarioBeen> list = new HashSet<>();
+        try (Session session = driver.session()) {
+            session.readTransaction(tx -> {
+                String query = """
+                    MATCH (u:Usuario {tipo_usuario: 'paciente'})
+                    RETURN u
+                """;
+                Result rs = tx.run(query);
+                while (rs.hasNext()) {
+                    var u = rs.next().get("u").asNode();
+                    list.add(new UsuarioBeen(
+                        u.get("nome").asString(),
+                        u.get("email").asString(),
+                        Date.valueOf(u.get("data_nascimento").asString()),
+                        u.get("sexo").asString().charAt(0)
+                    ));
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            System.err.println("Erro ao listar pacientes: " + e.getMessage());
         }
         return list;
     }
-    
-    public static boolean excluirPaciente(Connection con, int idPaciente) throws SQLException {
-        // Excluir vínculos da tabela plano_alimentar_paciente
-        String deleteVinculosSql = "DELETE FROM plano_alimentar_usuario WHERE id_usuario = ?";
-        try (PreparedStatement stmtVinculo = con.prepareStatement(deleteVinculosSql)) {
-            stmtVinculo.setInt(1, idPaciente);
-            stmtVinculo.executeUpdate();
-        }
 
-        // Excluir o usuário (paciente)
-        String deletePacienteSql = "DELETE FROM usuario WHERE id_usuario = ?";
-        try (PreparedStatement stmtDelete = con.prepareStatement(deletePacienteSql)) {
-            stmtDelete.setInt(1, idPaciente);
-            int rowsAffected = stmtDelete.executeUpdate();
-            return rowsAffected > 0;
-        }
-    }
-    
-    public static UsuarioBeen buscarPacientePorId(Connection con, int id) throws SQLException {
-        String sql = "SELECT * FROM usuario WHERE id_usuario = ? AND tipo_usuario = 'paciente'";
-        try (PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new UsuarioBeen(
-                    rs.getInt("id_usuario"),
-                    rs.getString("nome"),
-                    rs.getString("email"),
-                    rs.getString("senha"),
-                    rs.getDate("data_nascimento"),
-                    rs.getString("sexo").charAt(0),
-                    rs.getString("tipo_usuario")
-                );
-            }
-            return null;
+    // Buscar paciente por ID
+    public static UsuarioBeen buscarPacientePorNome(Driver driver, String nomePaciente) {
+        try (Session session = driver.session()) {
+            return session.readTransaction(tx -> {
+                String query = """
+                    MATCH (u:Usuario {nome: $nomePaciente, tipo_usuario: 'paciente'})
+                    RETURN u
+                """;
+                Result rs = tx.run(query, Values.parameters("nomePaciente", nomePaciente));
+                if (rs.hasNext()) {
+                    var u = rs.single().get("u").asNode();
+                    return new UsuarioBeen(
+                        u.get("nome").asString(),
+                        u.get("email").asString(),
+                        u.get("senha").asString(),
+                        Date.valueOf(u.get("data_nascimento").asString()),
+                        u.get("sexo").asString().charAt(0),
+                        u.get("tipo_usuario").asString()
+                    );
+                }
+                return null;
+            });
         }
     }
 
-    public static boolean atualizarPaciente(Connection con, UsuarioBeen paciente) throws SQLException {
-        String sql = "UPDATE usuario SET nome = ?, email = ?, senha = ?, data_nascimento = ?, sexo = ? WHERE id_usuario = ?";
-        try (PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, paciente.getNome());
-            stmt.setString(2, paciente.getEmail());
-            stmt.setString(3, paciente.getSenha());
-            stmt.setDate(4, new java.sql.Date(paciente.getData_nascimento().getTime()));
-            stmt.setString(5, String.valueOf(paciente.getSexo()));
-            stmt.setInt(6, paciente.getId_usuario());
+    // Atualizar paciente
+    public static boolean atualizarPaciente(Driver driver, UsuarioBeen paciente, String nomePaciente) {
+        try (Session session = driver.session()) {
+            session.writeTransaction(tx -> {
+                String query = """
+                    MATCH (u:Usuario {nome: $nomePaciente})
+                    SET u.nome = $nome,
+                        u.email = $email,
+                        u.senha = $senha,
+                        u.data_nascimento = $data_nascimento,
+                        u.sexo = $sexo
+                """;
+                tx.run(query, Values.parameters(
+                    "nomePaciente", nomePaciente,
+                    "nome", paciente.getNome(),
+                    "email", paciente.getEmail(),
+                    "senha", paciente.getSenha(),
+                    "data_nascimento", paciente.getData_nascimento().toString(),
+                    "sexo", String.valueOf(paciente.getSexo())
+                ));
+                return null;
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erro ao atualizar paciente: " + e.getMessage());
+            return false;
+        }
+    }
 
-            int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+    // Excluir paciente
+    public static boolean excluirPaciente(Driver driver, String nomePaciente) {
+        try (Session session = driver.session()) {
+            return session.writeTransaction(tx -> {
+                // Deleta vínculo com plano (relacionamento)
+                String deleteRel = """
+                    MATCH (u:Usuario {nome: $nome})-[r:TEM_PLANO]->()
+                    DELETE r
+                """;
+                tx.run(deleteRel, Values.parameters("nome", nomePaciente));
+
+                // Deleta o nó do usuário
+                String deleteNode = """
+                    MATCH (u:Usuario {nome: $nome})
+                    DELETE u
+                """;
+                tx.run(deleteNode, Values.parameters("nome", nomePaciente));
+
+                return true;
+            });
+        } catch (Exception e) {
+            System.err.println("Erro ao excluir paciente: " + e.getMessage());
+            return false;
         }
     }
 }
