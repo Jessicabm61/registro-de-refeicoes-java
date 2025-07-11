@@ -1,0 +1,26 @@
+file,batches,source,format,nodes,relationships,properties,time,rows,batchSize,cypherStatements,nodeStatements,relationshipStatements,schemaStatements,cleanupStatements
+null,1,"database: nodes(7), rels(5)",cypher,7,5,33,118,12,20000,"CREATE CONSTRAINT id_alimento_alimento_uniq FOR (node:alimento) REQUIRE (node.id_alimento) IS UNIQUE
+CREATE CONSTRAINT UNIQUE_IMPORT_NAME FOR (node:`UNIQUE IMPORT LABEL`) REQUIRE (node.`UNIQUE IMPORT ID`) IS UNIQUE
+UNWIND [{_id:0, properties:{senha:""123"", data_nascimento:""1994-11-25"", nome:""paciente"", sexo:""F"", tipo_usuario:""paciente"", email:""paciente@gmail.com""}}, {_id:8, properties:{senha:""123"", data_nascimento:""1994-11-25"", nome:""nutricionista"", sexo:""M"", tipo_usuario:""nutricionista"", email:""nutricionista@gmail.com""}}] AS row
+CREATE (n:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row._id}) SET n += row.properties SET n:Usuario
+UNWIND [{_id:1, properties:{descricao:""cutting""}}] AS row
+CREATE (n:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row._id}) SET n += row.properties SET n:PlanoAlimentar
+UNWIND [{id_alimento:1, properties:{carboidratos:28.17, calorias:130.0, nome_alimento:""Arroz"", proteinas:2.69}}, {id_alimento:3, properties:{carboidratos:0.0, calorias:165.0, nome_alimento:""Frango"", proteinas:31.02}}] AS row
+CREATE (n:alimento{id_alimento: row.id_alimento}) SET n += row.properties
+UNWIND [{_id:5, properties:{nome:""almoco"", descricao:""almoco""}}, {_id:7, properties:{id_refeicao:""0997ac9c-cbe5-408a-80de-1fb99a2bcb58"", nome:""janta"", descricao:""janta""}}] AS row
+CREATE (n:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row._id}) SET n += row.properties SET n:Refeicao
+UNWIND [{start: {_id:5}, end: {id_alimento:3}, properties:{quantidade:100.0}}, {start: {_id:7}, end: {id_alimento:3}, properties:{quantidade:100.0}}] AS row
+MATCH (start:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row.start._id})
+MATCH (end:alimento{id_alimento: row.end.id_alimento})
+CREATE (start)-[r:INCLUI]->(end) SET r += row.properties
+UNWIND [{start: {_id:0}, end: {_id:1}, properties:{data_inicio:""2025-07-06""}}] AS row
+MATCH (start:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row.start._id})
+MATCH (end:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row.end._id})
+CREATE (start)-[r:TEM_PLANO]->(end) SET r += row.properties
+UNWIND [{start: {_id:1}, end: {_id:5}, properties:{horario:""15:00:00""}}, {start: {_id:1}, end: {_id:7}, properties:{horario:""22:00:00""}}] AS row
+MATCH (start:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row.start._id})
+MATCH (end:`UNIQUE IMPORT LABEL`{`UNIQUE IMPORT ID`: row.end._id})
+CREATE (start)-[r:CONTEM]->(end) SET r += row.properties
+MATCH (n:`UNIQUE IMPORT LABEL`)  WITH n LIMIT 20000 REMOVE n:`UNIQUE IMPORT LABEL` REMOVE n.`UNIQUE IMPORT ID`
+DROP CONSTRAINT UNIQUE_IMPORT_NAME
+,null,null,null,null

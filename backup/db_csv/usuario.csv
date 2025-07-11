@@ -1,6 +1,0 @@
-id_usuario,nome,email,senha,data_nascimento,sexo,tipo_usuario
-9,Jessica,jessica@gmail.com,123,1994-11-25,F,nutricionista
-10,Natali,natali@gmail.com,123,1994-11-25,F,nutricionista
-11,Roberto,roberto@gmail.com,123,1994-05-25,M,nutricionista
-12,Eduardo,eduardo@nutricionista.com,123,1994-11-25,M,nutricionista
-13,Joao,joao@paciente.com,234,1994-11-25,M,paciente
